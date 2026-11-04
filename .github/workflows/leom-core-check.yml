@@ -1,0 +1,26 @@
+name: LEOM core economy and catalog verification
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Assets/**'
+      - 'ProjectSettings/**'
+      - 'Packages/**'
+      - 'tools/**'
+      - '.github/workflows/leom-core-check.yml'
+  workflow_dispatch:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check original LEOM catalog data and generated placeholder-only scene
+        run: python3 tools/verify_leom_migration.py
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Test 21-digit exact-money math and save schema
+        run: dotnet run --project tools/leom-tests/LeomCoreTests.csproj --configuration Release
