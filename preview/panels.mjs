@@ -160,7 +160,7 @@ export function createUI(rpg,game){
  function render(){
   if(!current)return;
   $('panel-title').textContent=titles[current]||current;
-  body.innerHTML=({bag,bank,shop,gear,char,skills,map})[current]?.()||'';
+  body.innerHTML=({bag,bank,shop,gear,char:character,skills,map})[current]?.()||'';
   if(current==='bank'){
    $('money-currency')?.addEventListener('change',e=>{chosenCurrency=e.target.value});
    $('money-value')?.addEventListener('input',e=>{currencyAmount=e.target.value});
