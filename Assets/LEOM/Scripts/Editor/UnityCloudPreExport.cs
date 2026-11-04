@@ -15,6 +15,10 @@ namespace Leom.EditorTools
             PlayerSettings.companyName = "LEOM";
             PlayerSettings.productName = "LEOM Offline PvE Playtest";
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
+            // Unity's generated framework attempted automatic IndexedDB sync and
+            // threw ReferenceError: IDBFS is not defined on LEOM Build #1.
+            // Opt out of the auto-sync hook via our custom HTML build template.
+            PlayerSettings.WebGL.template = "PROJECT:LEOMSafe";
             Debug.Log("[LEOM] Cloud build pre-export prepared the prototype scene.");
         }
     }

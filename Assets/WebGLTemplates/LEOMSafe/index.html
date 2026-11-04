@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b1725">
+  <title>LEOM — Unity WebGL Playtest</title>
+  <style>
+    html,body{padding:0;margin:0;overflow:hidden;width:100%;height:100%;background:#0b1725;color:#eef5ff;font-family:Arial,sans-serif}
+    #game{width:100%;height:100%;display:block;touch-action:none;background:#0b1725}
+    #status{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#14283de8;border-radius:8px;
+      text-align:center;font-size:13px;padding:10px 16px;max-width:min(620px,94%);pointer-events:none;box-shadow:0 4px 18px #0006}
+    #status[hidden]{display:none}
+    #progress{width:min(300px,72vw);height:5px;margin:7px auto 0;background:#40546c;border-radius:4px;overflow:hidden}
+    #bar{width:0;height:100%;background:#e6c276;transition:width .1s}
+  </style>
+</head>
+<body>
+  <canvas id="game" tabindex="-1" aria-label="LEOM Unity 3D game"></canvas>
+  <div id="status">
+    <div id="message">กำลังโหลด LEOM Unity WebGL ...</div>
+    <div id="progress"><div id="bar"></div></div>
+  </div>
+  <script>
+    // LEOM WebGL fix, 2026-11-05:
+    // Build #1 invoked injectIndexedDBToAutomaticallyPersist() although its
+    // framework did not expose IDBFS, causing "ReferenceError: IDBFS is not defined".
+    // Unity's documented opt-out is autoSyncPersistentDataPath:false.
+    // The LEOM offline RPG saves through PlayerPrefs.Save(), not through raw
+    // System.IO writes into persistentDataPath. Do not enable auto-sync until
+    // the active Unity/Emscripten toolchain is confirmed to include IDBFS.
+    var buildUrl = "Build";
+    var loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
+    var config = {
+      dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+      frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+      codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "{{{ COMPANY_NAME }}}",
+      productName: "{{{ PRODUCT_NAME }}}",
+      productVersion: "{{{ PRODUCT_VERSION }}}",
+      autoSyncPersistentDataPath: false,
+      devicePixelRatio: 1
+    };
+    var status = document.getElementById("status");
+    var progress = document.getElementById("bar");
+    var message = document.getElementById("message");
+    function fail(error){
+      message.textContent = "LEOM โหลดไม่สำเร็จ: " + String(error && error.message || error);
+      document.getElementById("progress").hidden = true;
+      status.hidden = false;
+      console.error("[LEOM] WebGL initialization failed",error);
+    }
+    var script = document.createElement("script");
+    script.src = loaderUrl;
+    script.onerror = function(){fail("โหลด WebGL loader ไม่ได้");};
+    script.onload = function(){
+      createUnityInstance(document.getElementById("game"),config,function(p){
+        progress.style.width = (Math.round(p * 100)) + "%";
+      }).then(function(){
+        status.hidden = true;
+        console.info("[LEOM] Unity WebGL initialized");
+      }).catch(fail);
+    };
+    document.body.appendChild(script);
+  </script>
+</body>
+</html>

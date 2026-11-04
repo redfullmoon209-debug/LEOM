@@ -20,6 +20,7 @@ namespace Leom.EditorTools
             // GitHub Pages doesn't provide the configurable Content-Encoding headers
             // required by all compressed WebGL distribution variants.
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
+            PlayerSettings.WebGL.template = "PROJECT:LEOMSafe";
 
             var output = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "build", "WebGL"));
             Directory.CreateDirectory(output);
