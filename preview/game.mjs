@@ -210,8 +210,8 @@ class Game {
     this.rpg.effectiveStat('dexterity')*.20,'⚔️ โจมตี');
  }
  castSlot(i){const id=this.rpg.state.hotbar[i];if(id)this.cast(id);}
- cast(id){
-  if(this.ui.isOpen()||this.rpg.hp<=0)return;
+ cast(id,fromMenu=false){
+  if((this.ui.isOpen()&&!fromMenu)||this.rpg.hp<=0)return;
   const sk=this.rpg.skills.get(id);
   if(!sk||sk.job!==this.rpg.state.job){this.tell('ยังไม่มีสกิลนี้ในอาชีพ');return;}
   if(sk.kind==='passive'){this.tell('สกิลติดตัวต้องอัปเกรด ไม่ต้องกดใช้');return;}
@@ -231,7 +231,8 @@ class Game {
    if(this.rpg.sp<20){this.tell('SP ไม่พอ (20)');return;}
    this.rpg.sp-=20;
    const delta=enemy.group.position.clone().sub(this.hero.position);delta.y=0;
-   this.hero.position.add(delta.normalize().multiplyScalar(Math.max(0,Math.min(7,delta.length()-1.6))));
+   const travel=Math.max(0,Math.min(7,delta.length()-1.6));
+   this.hero.position.add(delta.normalize().multiplyScalar(travel));
    this.skillUntil[id]=t+3;
    this.face(enemy);
    this.hit(enemy,27+this.rpg.effectiveStat('strength')*.6,'⚡ Azure Rush');

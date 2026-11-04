@@ -202,7 +202,7 @@ export function createUI(rpg,game){
    case 'job':ask('เลือกอาชีพ '+rpg.jobs.get(id)?.nameEn+'?',()=>rpg.promote(id));break;
    case 'passive':rpg.upgradePassive(id);break;
    case 'equiphot':rpg.equipSkill(id,skillSlot);break;
-   case 'cast':game.cast(id);break;
+   case 'cast':game.cast(id,true);break;
    case 'save':rpg.persist();rpg.say('บันทึกเกมในเบราว์เซอร์นี้');break;
    case 'locale':locale=locale==='th'?'en':'th';break;
   }
