@@ -1,0 +1,56 @@
+name: Deploy LEOM browser playtest to free GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'preview/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: leom-free-github-pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Get LEOM site files
+        uses: actions/checkout@v4
+      - name: Prepare static site at /LEOM/
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p site
+          cp preview/index.html preview/style.css preview/rpg.mjs preview/panels.mjs preview/game.mjs preview/catalog.json site/
+          touch site/.nojekyll
+          test -s site/index.html
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          s=Path('site')
+          d=json.loads((s/'catalog.json').read_text())
+          assert len(d['skills'])==171 and len(d['offers'])==21
+          assert 'id="start"' in (s/'index.html').read_text()
+          print('LEOM browser root ready for Pages')
+          PY
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload LEOM site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - name: Deploy LEOM website
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Published LEOM link
+        run: echo "LEOM test https://redfullmoon209-debug.github.io/LEOM/" >> "$GITHUB_STEP_SUMMARY"
