@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a111b">
+  <meta name="description" content="LEOM free browser 3D offline game preview. No Unity Editor download required.">
+  <title>LEOM • Browser 3D Test</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main id="app">
+    <section id="world" aria-label="LEOM 3D test world"></section>
+    <header class="topbar">
+      <div class="brand">LEOM <small>3D BROWSER TEST</small></div>
+      <div class="notice-tag">ต้นแบบเว็บชั่วคราว • ยังไม่ใช่ Unity WebGL • ไม่ใช่เซิร์ฟเวอร์ MMORPG</div>
+    </header>
+    <div id="status" class="status">
+      <div class="identity"><b id="charname">Adventurer</b><span id="job">Novice</span><span id="level">Lv 1</span></div>
+      <div class="meter"><div id="hp-fill" class="fill hp"></div><span id="hp-label">HP</span></div>
+      <div class="meter"><div id="sp-fill" class="fill sp"></div><span id="sp-label">SP</span></div>
+      <div class="meter narrow"><div id="exp-fill" class="fill exp"></div><span id="exp-label">EXP</span></div>
+      <div class="statusline"><span id="gold">GOLD 0</span><span id="bag-stat">BAG 0/40</span></div>
+      <div class="target-line">เป้าหมาย: <strong id="target">ไม่มี</strong> <span id="zone">• เขตฟาร์ม</span></div>
+    </div>
+    <nav id="menu" class="menu" aria-label="LEOM systems">
+      <button data-panel="bag">🎒 กระเป๋า</button>
+      <button data-panel="bank">🏦 คลัง</button>
+      <button data-panel="shop">🛒 ร้านค้า</button>
+      <button data-panel="gear">🛡️ อุปกรณ์</button>
+      <button data-panel="char">✨ ตัวละคร</button>
+      <button data-panel="skills">⚡ สกิล</button>
+      <button data-panel="map">🗺️ แผนที่</button>
+    </nav>
+    <div class="actions" id="actions" aria-label="Combat actions">
+      <button id="target-btn" title="Target (T)">🎯 เลือกเป้า</button>
+      <button id="attack-btn" class="highlight" title="Attack (J)">⚔️ โจมตี</button>
+      <button data-skill="0" title="Skill 1">1 ฟัน</button>
+      <button data-skill="1" title="Skill 2">2 พุ่ง</button>
+      <button data-skill="2" title="Skill 3">3 โล่</button>
+      <button id="auto-btn" title="Auto farm (Q)">▶ ออโต้</button>
+      <button id="pick-btn" title="Pick up (E)">📦 เก็บ</button>
+      <button id="jump-btn" title="Jump (Space)">↑ กระโดด</button>
+    </div>
+    <div id="pad" class="pad" aria-label="Touch movement">
+      <span>เดิน</span><button data-dir="up" class="up">▲</button>
+      <button data-dir="left" class="left">◀</button>
+      <button data-dir="down" class="down">▼</button>
+      <button data-dir="right" class="right">▶</button>
+    </div>
+    <div id="toast" aria-live="polite"></div>
+    <div class="help" id="help">WASD เดิน • Shift วิ่ง • ลากหน้าจอ/คลิกขวาหมุนกล้อง • J ตี • T เป้า • Q ออโต้ • E เก็บ • B กระเป๋า</div>
+    <aside id="panel" class="panel hidden" aria-live="polite">
+      <div class="panel-title"><strong id="panel-title">กระเป๋า</strong><button id="close-panel">✕ ปิด</button></div>
+      <div id="panel-body" class="panel-body"></div>
+    </aside>
+    <div id="confirm" class="confirm hidden" role="dialog" aria-modal="true" aria-labelledby="confirm-text">
+      <div class="confirm-card"><h3>ยืนยัน</h3><p id="confirm-text"></p>
+        <div><button id="confirm-yes" class="warn">ยืนยัน</button><button id="confirm-no">ยกเลิก</button></div>
+      </div>
+    </div>
+    <div id="start-screen" class="start-screen">
+      <div class="start-card">
+        <div class="mark">L E O M</div>
+        <h1>โลกทดลอง 3D บนเบราว์เซอร์</h1>
+        <p>ตัวละครและแผนที่สร้างขึ้นชั่วคราว • ระบบไอเทม/กระเป๋า/ร้านค้า/สกิลจำลองจาก LEOM • เซฟลงเบราว์เซอร์นี้</p>
+        <div class="features">ฟาร์มมอนสเตอร์ · EXP · ออโต้ตี · ร้านค้า · คลัง · อาชีพ · เงิน 4 สกุล</div>
+        <button id="start" class="play">▶ เข้าเล่นเกม</button>
+        <div id="load-note" class="load-note">กำลังเตรียมเกม ...</div>
+        <small>ไม่มีการติดตั้ง Unity และไม่มีค่าใช้จ่าย • ตัวนี้เป็นเว็บทดสอบชั่วคราว ไม่ใช่ Unity WebGL หรือระบบออนไลน์จริง</small>
+      </div>
+    </div>
+  </main>
+  <script type="module" src="./game.mjs"></script>
+</body>
+</html>
