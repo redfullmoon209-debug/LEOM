@@ -5,6 +5,7 @@ on:
     paths:
       - 'preview/**'
       - 'tools/preview_browser_qa.cjs'
+      - 'tools/public_preview_qa.cjs'
       - '.github/workflows/browser-playtest-qa.yml'
   workflow_dispatch:
 permissions:
@@ -30,6 +31,11 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: /tmp/leom-browser/node_modules/playwright
         run: node tools/preview_browser_qa.cjs
+      - name: Verify free public browser URL without Pages setup
+        continue-on-error: true
+        env:
+          PLAYWRIGHT_MODULE: /tmp/leom-browser/node_modules/playwright
+        run: node tools/public_preview_qa.cjs
       - name: Preserve browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
