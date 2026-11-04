@@ -1,7 +1,7 @@
 // LEOM FREE 3D browser test, standalone fallback while Unity WebGL cloud build is blocked.
 // Temporary meshes and map are procedural; no original Leoonline FBX/map is imported.
 // Uses permissive MIT-licensed three.js hosted as a local pinned Pages build asset.
-import * as THREE from './vendor/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.176.0/build/three.module.js';
 import {RPG} from './rpg.mjs';
 import {createUI} from './panels.mjs';
 

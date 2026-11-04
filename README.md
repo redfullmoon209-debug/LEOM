@@ -57,3 +57,8 @@ The local demo calculates drops/EXP/HP for convenience. In multiplayer, **only t
 A separate cloud GitHub Actions workflow is prepared to build Unity WebGL and host it at
 https://redfullmoon209-debug.github.io/LEOM/
 without changing the existing Godot home page. The URL is **not valid as a Unity build until CI + Pages deployment succeeds**. See [Docs/BROWSER_TEST.md](Docs/BROWSER_TEST.md) for Unity licensing prerequisite and deployment details.
+
+
+## Free browser preview
+
+See [BROWSER_PREVIEW.md](BROWSER_PREVIEW.md). The optional Three.js test uses a generated 3D map and temporary character and **does not rely on Unity Cloud**. It is not a Unity WebGL build.

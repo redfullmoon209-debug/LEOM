@@ -1,0 +1,68 @@
+name: LEOM free browser source checks
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'preview/**'
+      - 'index.html'
+      - 'BROWSER_PREVIEW.md'
+      - '.github/workflows/preview-check.yml'
+  workflow_dispatch:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate game ES modules
+        run: |
+          set -euo pipefail
+          for file in preview/rpg.mjs preview/panels.mjs preview/game.mjs; do node --check "$file"; done
+      - name: Check browser public paths and 171 source skill IDs
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          assert 'url=./preview/' in Path('index.html').read_text()
+          assert 'three@0.176.0' in Path('preview/game.mjs').read_text()
+          assert 'game.mjs' in Path('preview/index.html').read_text()
+          data=json.loads(Path('preview/catalog.json').read_text())
+          assert len(data['items'])==31
+          assert len(data['offers'])==21
+          assert len(data['jobs'])==13
+          assert len(data['skills'])==171
+          assert Path('preview/style.css').stat().st_size>5000
+          print('LEOM static browser preview source OK')
+          PY
+      - name: Test local economy, bag, storage and shop without Unity license
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          import {RPG,CAP} from './preview/rpg.mjs';
+          globalThis.localStorage={getItem:()=>null,setItem:()=>{}};
+          const data=JSON.parse(fs.readFileSync('preview/catalog.json','utf8'));
+          const rpg=new RPG(data,()=>{});
+          assert.equal(rpg.state.unlocked,40);
+          assert.equal(rpg.state.bag.length,200);
+          assert.equal(rpg.state.storage.length,200);
+          assert.equal(rpg.buy('hp_potion_small'),false);
+          assert.equal(rpg.credit('gold','1000'),true);
+          assert.equal(rpg.buy('hp_potion_small'),true);
+          const i=rpg.state.bag.indexOf('hp_potion_small');
+          assert.ok(i>=0);
+          assert.equal(rpg.deposit(i),true);
+          const j=rpg.state.storage.indexOf('hp_potion_small');
+          assert.ok(j>=0);
+          assert.equal(rpg.withdraw(j),true);
+          assert.equal(rpg.transferMoney('gold','100'),true);
+          assert.equal(rpg.transferMoney('gold','100',true),true);
+          rpg.state.wallet.gold=CAP.toString();
+          assert.equal(rpg.credit('gold','1'),false);
+          assert.equal(rpg.state.wallet.gold,CAP.toString());
+          assert.equal(rpg.skills.size,171);
+          console.log('LEOM economy, shop, bank and skill catalog tests PASS');
+          JS
