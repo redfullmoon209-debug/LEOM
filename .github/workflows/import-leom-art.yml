@@ -1,0 +1,64 @@
+name: Import LEOM real PNG art layers
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ArtSource/leom-single-assets.json'
+      - 'tools/import_leom_generated_art.py'
+      - '.github/workflows/import-leom-art.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: leom-sprite-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout LEOM
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Configure Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install PNG image processing library
+        run: pip install Pillow numpy
+      - name: Download original individually generated images and convert white matte to transparent PNG
+        run: python tools/import_leom_generated_art.py
+      - name: Verify PNG alpha and source count
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          p = Path('Assets/LEOM/Resources/LEOM/UI')
+          files = sorted(p.glob('*.png'))
+          assert len(files) >= 8, len(files)
+          for f in files:
+              with Image.open(f) as im:
+                  assert im.mode == 'RGBA', f
+                  assert im.getchannel('A').getextrema()[0] == 0, f
+          print('PASS: 10 separate PNGs, transparent alpha, no atlas cropping')
+          PY
+      - name: Pack real PNG layers for direct Unity import
+        uses: actions/upload-artifact@v4
+        with:
+          name: LEOM-royal-red-gold-individual-PNG
+          path: Assets/LEOM/Resources/LEOM/UI/*.png
+          retention-days: 14
+      - name: Commit real PNG sprites into LEOM main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Assets/LEOM/Resources/LEOM/UI/
+          if ! git diff --cached --quiet; then
+            git commit -m "art(ui): add 10 real independent RGBA PNG layers to LEOM"
+            git push origin HEAD:main
+          fi

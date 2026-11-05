@@ -30,6 +30,7 @@ namespace Leom.Prototype
         {
             if (!Visible || (hud != null && hud.WindowOpen)) return;
             float scale = Mathf.Clamp(Screen.height / 750f, .65f, 1.15f);
+            LeomRoyalPngSkin.Apply();
             Matrix4x4 original = GUI.matrix;
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale,scale,1f));
             float w = Screen.width / scale, h = Screen.height / scale;

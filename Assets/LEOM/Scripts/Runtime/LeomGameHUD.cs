@@ -43,6 +43,7 @@ namespace Leom.Prototype
         {
             var rpg = LeomRpgService.Instance;
             if (rpg == null || rpg.Character == null) return;
+            LeomRoyalPngSkin.Apply();
             Matrix4x4 previous = GUI.matrix;
             float scale = Mathf.Clamp(Screen.height / 900f, .62f, 1.3f);
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale,scale,1f));
@@ -89,6 +90,7 @@ namespace Leom.Prototype
                 float panelHeight = Mathf.Max(280f,Mathf.Min(h-panelTop-10f,625f));
                 Rect window = new Rect((w-panelWidth)*.5f,panelTop,panelWidth,panelHeight);
                 GUI.Box(window,tab + " — original Leoonline IDs, temporary Unity UI");
+                LeomRoyalPngSkin.DrawWindowTrim(window);
                 if (GUI.Button(new Rect(window.xMax-46f,window.y+6f,36f,27f),"X"))
                     { tab = Tab.None; confirmation = null; }
                 Rect area = new Rect(window.x+12f,window.y+39f,window.width-24f,window.height-51f);
@@ -155,7 +157,7 @@ namespace Leom.Prototype
                 string id=c.bag[slot];
                 string label=slot>=c.unlocked ? "[LOCK]" :
                     string.IsNullOrEmpty(id) ? (slot+1).ToString() : (slot+1)+":"+id;
-                if(GUI.Button(new Rect(a.x+2+(i%columns)*cw,a.y+31+(i/columns)*ch,cw-2,ch-2),label))
+                if(GUI.Button(new Rect(a.x+2+(i%columns)*cw,a.y+31+(i/columns)*ch,cw-2,ch-2),label,LeomRoyalPngSkin.Slot()))
                 {
                     if(slot<c.unlocked) selectedBag=slot;
                 }
