@@ -1,56 +1,104 @@
-name: Deploy LEOM browser playtest to free GitHub Pages
-
+name: Build, test and publish LEOM + Godot Lumen Vale
 on:
   push:
-    branches: [main]
+    branches: [main, godot-web-rebuild]
     paths:
+      - 'godot-web/**'
       - 'preview/**'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: leom-free-github-pages
-  cancel-in-progress: true
-
+  cancel-in-progress: false
 jobs:
-  publish:
+  build-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install official Godot 4.4.1 and matching web templates
+        run: |
+          set -euxo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          sudo install /tmp/godot/Godot_v4.4.1-stable_linux.x86_64 /usr/local/bin/godot
+          curl -fL --retry 3 -o /tmp/templates.tpz https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz
+          mkdir -p ~/.local/share/godot/export_templates/4.4.1.stable
+          unzip -j /tmp/templates.tpz 'templates/web*' -d ~/.local/share/godot/export_templates/4.4.1.stable
+          godot --version
+      - name: Import and test actual GDScript gameplay
+        run: |
+          set -euxo pipefail
+          godot --headless --path godot-web --editor --import 2>&1 | tee import.log
+          ! grep -E 'SCRIPT ERROR|Parse Error|ERROR:' import.log
+          godot --headless --path godot-web --script res://tests/core.gd 2>&1 | tee core.log
+          ! grep -E 'SCRIPT ERROR|Parse Error|ERROR:' core.log
+      - name: Export real Godot WebAssembly build and preserve existing LEOM site
+        run: |
+          set -euxo pipefail
+          mkdir -p site/godot-web
+          cp preview/index.html preview/style.css preview/rpg.mjs preview/panels.mjs preview/game.mjs preview/catalog.json site/
+          touch site/.nojekyll
+          godot --headless --path godot-web --export-release Web "$PWD/site/godot-web/index.html" 2>&1 | tee export.log
+          ! grep -E 'SCRIPT ERROR|Parse Error|ERROR:' export.log
+          test -s site/godot-web/index.wasm
+          test -s site/godot-web/index.pck
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test runtime
+        run: |
+          npm install --no-save --package-lock=false playwright@1.51.1
+          npx playwright install --with-deps chromium
+      - name: Browser integration tests against actual Web Export
+        run: |
+          python3 -m http.server 8765 --directory site >/tmp/lumen-http.log 2>&1 &
+          node godot-web/tests/browser.cjs
+      - name: Save test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-test-evidence
+          path: |
+            *.log
+            qa-*.png
+            qa-browser.json
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build-test
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Get LEOM site files
-        uses: actions/checkout@v4
-      - name: Prepare static site at /LEOM/
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p site
-          cp preview/index.html preview/style.css preview/rpg.mjs preview/panels.mjs preview/game.mjs preview/catalog.json site/
-          touch site/.nojekyll
-          test -s site/index.html
-          python3 - <<'PY'
-          from pathlib import Path
-          import json
-          s=Path('site')
-          d=json.loads((s/'catalog.json').read_text())
-          assert len(d['skills'])==171 and len(d['offers'])==21
-          assert 'id="start"' in (s/'index.html').read_text()
-          print('LEOM browser root ready for Pages')
-          PY
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-      - name: Upload LEOM site
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-      - name: Deploy LEOM website
+      - uses: actions/configure-pages@v5
+      - name: Publish both games
         id: deployment
         uses: actions/deploy-pages@v4
-      - name: Published LEOM link
-        run: echo "LEOM test https://redfullmoon209-debug.github.io/LEOM/" >> "$GITHUB_STEP_SUMMARY"
+  live-test:
+    needs: deploy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --package-lock=false playwright@1.51.1 && npx playwright install --with-deps chromium
+      - name: Test public GitHub Pages game
+        env:
+          GAME_URL: https://redfullmoon209-debug.github.io/LEOM/godot-web/
+        run: node godot-web/tests/browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: godot-live-test-evidence
+          path: |
+            qa-*.png
+            qa-browser.json

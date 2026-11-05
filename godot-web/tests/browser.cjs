@@ -1,0 +1,63 @@
+const { chromium } = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+(async () => {
+ const browser = await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+ const page = await browser.newPage({viewport:{width:1152,height:720}});
+ const errors=[];
+ page.on('pageerror',e=>errors.push(String(e)));
+ page.on('console',m=>{if(m.type()==='error' && /SCRIPT ERROR|Parse Error|Failed to load|WebGL.*failed/i.test(m.text())) errors.push(m.text());});
+ const response=await page.goto(process.env.GAME_URL || 'http://127.0.0.1:8765/godot-web/',{waitUntil:'networkidle',timeout:120000});
+ assert.equal(response.status(),200);
+ await page.waitForFunction(()=>window.lumenReady && window.lumenState?.state==='title',null,{timeout:120000});
+ const state=()=>page.evaluate(()=>window.lumenState);
+ await page.screenshot({path:'qa-title.png'});
+ await page.keyboard.press('Enter');
+ await page.waitForFunction(()=>window.lumenState?.state==='playing');
+ const first=await state();
+ await page.keyboard.down('d'); await page.waitForTimeout(350); await page.keyboard.up('d');
+ assert.ok((await state()).x>first.x+25,'Keyboard moves hero');
+ await page.keyboard.press('p');
+ await page.waitForFunction(()=>window.lumenState.state==='paused');
+ const paused=await state();
+ await page.keyboard.down('d'); await page.waitForTimeout(200); await page.keyboard.up('d');
+ assert.equal((await state()).x,paused.x,'Pause blocks motion');
+ assert.equal((await state()).elapsed,paused.elapsed,'Pause freezes timer');
+ await page.keyboard.press('p');
+ await page.waitForFunction(()=>window.lumenState.state==='playing');
+ await page.keyboard.press('Shift');
+ await page.waitForTimeout(50);
+ assert.ok((await state()).dash_cd>0,'Dash activated');
+ // Real pointer events on the on-screen directional button.
+ const beforeTouch=await state();
+ await page.mouse.move(68,655); await page.mouse.down(); await page.waitForTimeout(500); await page.mouse.up();
+ assert.ok((await state()).x<beforeTouch.x,'On-screen control moves hero');
+ // Walk toward the north-west sentinel while holding strike.
+ await page.keyboard.down('w'); await page.keyboard.down(' ');
+ await page.waitForTimeout(580); await page.keyboard.up('w');
+ await page.keyboard.down('d'); await page.waitForTimeout(430); await page.keyboard.up('d');
+ // Aim upward at approaching sentinel. Repeated real attacks.
+ await page.keyboard.down('w'); await page.waitForTimeout(60); await page.keyboard.up('w');
+ await page.waitForTimeout(5000); await page.keyboard.up(' ');
+ assert.ok((await state()).kills>=1,'Real keyboard combat defeats at least one sentinel');
+ await page.screenshot({path:'qa-gameplay.png'});
+ // Check touch events in a separate mobile context with scaled canvas.
+ const mobile=await browser.newContext({viewport:{width:844,height:527},hasTouch:true,isMobile:true});
+ const mp=await mobile.newPage();
+ mp.on('pageerror',e=>errors.push(String(e)));
+ await mp.goto(process.env.GAME_URL || 'http://127.0.0.1:8765/godot-web/',{waitUntil:'networkidle'});
+ await mp.waitForFunction(()=>window.lumenState?.state==='title',null,{timeout:120000});
+ await mp.touchscreen.tap(422,339);
+ await mp.waitForFunction(()=>window.lumenState.state==='playing');
+ const mstart=await mp.evaluate(()=>window.lumenState.x);
+ const client=await mp.context().newCDPSession(mp);
+ await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:154,y:483}]});
+ await mp.waitForTimeout(450);
+ await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ assert.ok((await mp.evaluate(()=>window.lumenState.x))>mstart+20,'Mobile touch moves hero');
+ await mp.screenshot({path:'qa-mobile.png'});
+ assert.deepEqual(errors,[],'Browser must have no script/runtime/load errors');
+ fs.writeFileSync('qa-browser.json',JSON.stringify({passed:true,desktop:await state(),mobile:await mp.evaluate(()=>window.lumenState),errors},null,2));
+ console.log('LUMEN_BROWSER_TESTS PASS: boot, keyboard, pause, dash, on-screen controls, combat, mobile touch, runtime errors');
+ await browser.close();
+})().catch(e=>{console.error(e);process.exit(1)});
