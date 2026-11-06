@@ -1,0 +1,63 @@
+name: Import pearl character sprites (individual PNGs)
+on:
+  push:
+    branches:
+      - feature/pearl-character-ui-20261106
+    paths:
+      - 'ArtSource/pearl-character-assets.json'
+      - 'tools/import_pearl_character_art.py'
+      - '.github/workflows/import-pearl-character-art.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Pillow
+        run: python -m pip install pillow
+      - name: Import independent pearl 2K images with transparent alpha
+        run: python tools/import_pearl_character_art.py
+      - name: Verify independent PNG assets for Unity Resources
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          root = Path("Assets/LEOM/Resources/LEOM/UI")
+          for name in ["pearl_character_window", "pearl_equipment_slot"]:
+              p = root / (name + ".png")
+              with Image.open(p) as im:
+                  assert im.mode == "RGBA"
+                  assert min(im.size) >= 900
+                  low, high = im.getchannel("A").getextrema()
+                  assert low == 0 and high > 190
+                  print(name, im.size, low, high)
+          PY
+      - name: Keep original separate PNGs available as a downloadable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LEOM-pearl-character-independent-PNGs
+          path: |
+            Assets/LEOM/Resources/LEOM/UI/pearl_character_window.png
+            Assets/LEOM/Resources/LEOM/UI/pearl_equipment_slot.png
+          retention-days: 20
+      - name: Commit independent PNGs on feature branch only
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Assets/LEOM/Resources/LEOM/UI/pearl_character_window.png Assets/LEOM/Resources/LEOM/UI/pearl_equipment_slot.png
+          if ! git diff --cached --quiet; then
+            git commit -m "art(ui): add original pearl character and slot PNG sprites"
+            git push origin "HEAD:${{ github.ref_name }}"
+          fi
