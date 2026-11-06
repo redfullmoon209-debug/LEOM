@@ -22,6 +22,20 @@ namespace Leom.Prototype
         private bool showThai;
         public bool WindowOpen => tab != Tab.None || confirmation != null;
 
+        public bool CharacterWindowOpen => tab == Tab.Character || tab == Tab.Equipment;
+
+        private void Start()
+        {
+            // Auto-install on existing local scenes as well as newly built prototype scenes.
+            if (GetComponent<LeomPearlCharacterUI>() == null)
+                gameObject.AddComponent<LeomPearlCharacterUI>();
+        }
+
+        public void CloseCharacterWindow()
+        {
+            if (CharacterWindowOpen) tab = Tab.None;
+        }
+
         private void Update()
         {
             if (Input.GetKeyDown(KeyCode.B) || Input.GetKeyDown(KeyCode.I))
@@ -83,7 +97,7 @@ namespace Leom.Prototype
             }
             if (rpg.NoticeUntil > Time.time)
                 GUI.Box(new Rect(Mathf.Max(9f,w-440),h-62f,Mathf.Min(430,w-18),35),rpg.Notice);
-            if (tab != Tab.None)
+            if (tab != Tab.None && !CharacterWindowOpen)
             {
                 float panelWidth = Mathf.Min(w-20f, 900f);
                 float panelTop = navY + navRows*37f + 8f;
